@@ -9,20 +9,28 @@
     };
     crane = {
       url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
+      #inputs.nixpkgs.follows = "nixpkgs";
+      #inputs.flake-utils.follows = "flake-utils";
     };
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, rust-overlay, crane }:
+  outputs = { self, nixpkgs, rust-overlay, crane, flake-utils }:
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       pkgsFor = system: import nixpkgs {
         inherit system;
-        overlays = [ rust-overlay.overlays.default ];
+        overlays = [ 
+          rust-overlay.overlays.default
+          self.overlays.default
+        ];
       };
     in
     {
+      overlays.default = final: prev: {
+        crane = crane.mkLib final;
+      };
       nixosModules.default = { config, lib, pkgs, ... }:
         let
           cfg = config.services.secrets;
@@ -125,10 +133,35 @@
           };
         };
 
+        devShells = forAllSystems (system:
+        let
+          pkgs = pkgsFor system;
+        in
+        {
+          default = pkgs.mkShell {
+            buildInputs = with pkgs; [
+              # Rust toolchain
+              rust-overlay.packages.${system}.rust-nightly
+              rust-analyzer
+
+              # Dependencies
+              pkg-config
+              libsodium
+
+              # Development tools
+              cargo-watch
+              cargo-edit
+            ];
+
+            # Set environment variables
+            RUST_SRC_PATH = pkgs.rust.packages.stable.rustPlatform.rustLibSrc;
+          };
+        });
+
       packages = forAllSystems (system:
         let
           pkgs = pkgsFor system;
-          craneLib = crane.lib.${system};
+          craneLib = pkgs.crane;
           
           commonArgs = {
             src = ./.;

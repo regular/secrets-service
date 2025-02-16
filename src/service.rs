@@ -1,13 +1,13 @@
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::UnixListener;
 use tokio::sync::Mutex;
-use tokio::time::Instant;
+use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt, AsyncBufReadExt};
 
 use crate::crypto::{SecureKey, encrypt_stream, decrypt_stream};
 use crate::error::ServiceError;
-use crate::protocol::{Command, Response};
+use crate::protocol::Command;
 
 struct KeyCache {
     key: Option<Arc<SecureKey>>,
@@ -58,7 +58,7 @@ impl SecretsService {
         &self,
         mut stream: tokio::net::UnixStream,
     ) -> Result<(), ServiceError> {
-        use tokio::io::{AsyncBufReadExt, BufReader};
+        use tokio::io::{BufReader};
 
         // Split stream for concurrent read/write
         let (reader, mut writer) = stream.split();
@@ -136,7 +136,7 @@ impl SecretsService {
         let file_path = self.store_path.join(path);
         let writer = tokio::fs::File::create(file_path).await?;
         
-        encrypt_stream(key, reader, writer).await
+        encrypt_stream(key, path, reader, writer).await
     }
 
     async fn decrypt_stream<W>(&self, path: &str, writer: W) -> Result<(), ServiceError>
@@ -147,6 +147,6 @@ impl SecretsService {
         let file_path = self.store_path.join(path);
         let reader = tokio::fs::File::open(file_path).await?;
         
-        decrypt_stream(key, reader, writer).await
+        decrypt_stream(key, path, reader, writer).await
     }
 }

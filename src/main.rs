@@ -1,5 +1,6 @@
 use std::{env, time::Duration, path::PathBuf};
 use tokio::net::UnixListener;
+use std::os::unix::fs::PermissionsExt;
 
 mod crypto;
 mod error;
