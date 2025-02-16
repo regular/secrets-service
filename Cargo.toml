@@ -1,0 +1,16 @@
+[package]
+name = "secrets-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sodiumoxide = "0.2.7"
+tokio = { version = "1.28", features = ["full"] }
+bytes = "1.4"
+futures = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+libc = "0.2"
+tracing = "0.1"
+tracing-subscriber = "0.3"
