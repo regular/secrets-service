@@ -1,3 +1,4 @@
+
 set -euo pipefail
 
 SOCKET=UNIX-CONNECT:$SECRETS_SOCKET
