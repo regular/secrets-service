@@ -68,17 +68,20 @@ impl SecretsService {
         let mut command_line = String::new();
         reader.read_line(&mut command_line).await?;
         
+        
         let command = command_line.trim().parse::<Command>()?;
         
         match command {
             Command::SetPassphrase(passphrase) => {
                 self.set_passphrase(passphrase).await?;
                 writer.write_all(b"ok\n").await?;
+                writer.flush().await?;
             }
             Command::Encrypt(path) => {
                 // Use reader stream directly as input
                 self.encrypt_stream(&path, reader).await?;
                 writer.write_all(b"ok\n").await?;
+                writer.flush().await?;
             }
             Command::Decrypt(path) => {
                 // Use writer stream directly as output

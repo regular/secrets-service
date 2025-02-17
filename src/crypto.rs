@@ -1,7 +1,7 @@
 use crate::error::ServiceError;
 use sodiumoxide::crypto::secretstream::{Stream, Tag, Key, Header};
 use std::sync::Arc;
-use tokio::io::{AsyncRead, AsyncWrite};
+use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use base64::{Engine as _, engine::general_purpose::STANDARD as base64_engine};
 
 pub struct SecureKey {
@@ -77,6 +77,9 @@ where
     let (mut stream, header) = Stream::init_push(&key.key)
         .map_err(|_| ServiceError::Encryption("Failed to initialize encryption stream".to_string()))?;
 
+    //tracing::info!("key {:?}", key.key.as_ref());
+    //tracing::info!("header {:?}", header);
+
     // Write header
     tokio::io::AsyncWriteExt::write_all(&mut writer, header.as_ref()).await?;
 
@@ -85,15 +88,20 @@ where
         let n = tokio::io::AsyncReadExt::read(&mut reader, &mut buffer).await?;
         if n == 0 {
             // End of input
+            //tracing::info!("End of Input");
+            /*
             let final_chunk = stream.push(&[], Some(path.as_bytes()), Tag::Final)
                 .map_err(|_| ServiceError::Encryption("Failed to write final encrypted chunk".to_string()))?;
             tokio::io::AsyncWriteExt::write_all(&mut writer, &final_chunk).await?;
+            */
+            writer.flush().await?;
             break;
         }
 
         let encrypted = stream.push(&buffer[..n], Some(path.as_bytes()), Tag::Message)
             .map_err(|_| ServiceError::Encryption("Failed to encrypt data chunk".to_string()))?;
         tokio::io::AsyncWriteExt::write_all(&mut writer, &encrypted).await?;
+        //tracing::info!("Wrote: {:?}", encrypted);
     }
 
     Ok(())
@@ -108,30 +116,42 @@ where
     R: AsyncRead + Unpin,
     W: AsyncWrite + Unpin,
 {
+    //tracing::info!("key {:?}", key.key.as_ref());
+    //
     // Read header bytes
     let mut header_bytes = [0u8; sodiumoxide::crypto::secretstream::HEADERBYTES];
     tokio::io::AsyncReadExt::read_exact(&mut reader, &mut header_bytes).await?;
+
+    //tracing::info!("header {:?}", header_bytes);
 
     // Create header from bytes
     let header = Header::from_slice(&header_bytes)
         .ok_or_else(|| ServiceError::Encryption("Invalid header".to_string()))?;
 
+    
     let mut stream = Stream::init_pull(&header, &key.key)
         .map_err(|_| ServiceError::Encryption("Failed to initialize decryption stream".to_string()))?;
 
     let mut buffer = [0u8; 16384 + sodiumoxide::crypto::secretstream::ABYTES];
     loop {
         let n = tokio::io::AsyncReadExt::read(&mut reader, &mut buffer).await?;
+        //tracing::info!("read {} bytes", n);
+        //tracing::info!("Read: {:?}", buffer[..n]);
+
         if n == 0 {
             break;
         }
 
         let (decrypted, tag) = stream.pull(&buffer[..n], Some(path.as_bytes()))
             .map_err(|_| ServiceError::Encryption("Failed to decrypt data chunk".to_string()))?;
+
+        //tracing::info!("decrypted {} bytes", n);
         
         tokio::io::AsyncWriteExt::write_all(&mut writer, &decrypted).await?;
 
-        if tag == Tag::Final {
+        //if tag == Tag::Final {
+        if stream.is_finalized() {
+            //tracing::info!("stream is finalized");
             break;
         }
     }
