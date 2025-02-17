@@ -11,11 +11,12 @@ impl FromStr for Command {
     type Err = ServiceError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.split_whitespace().collect();
-        match parts.as_slice() {
-            ["set-passphrase", passphrase] => Ok(Command::SetPassphrase(passphrase.to_string())),
-            ["encrypt", path] => Ok(Command::Encrypt(path.to_string())),
-            ["decrypt", path] => Ok(Command::Decrypt(path.to_string())),
+        let mut parts = s.splitn(2, " ");
+            match (parts.next(), parts.next()) {
+            (Some("set-passphrase"), Some(passphrase)) => Ok(Command::SetPassphrase(passphrase.to_string())),
+
+            (Some("encrypt"), Some(path)) => Ok(Command::Encrypt(path.to_string())),
+            (Some("decrypt"), Some(path)) => Ok(Command::Decrypt(path.to_string())),
             _ => Err(ServiceError::Protocol("Invalid command format".to_string())),
         }
     }
