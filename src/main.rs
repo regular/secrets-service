@@ -6,6 +6,7 @@ mod crypto;
 mod error;
 mod protocol;
 mod service;
+mod store;
 
 #[tokio::main]
 async fn main() {

@@ -94,7 +94,7 @@ where
                 .map_err(|_| ServiceError::Encryption("Failed to write final encrypted chunk".to_string()))?;
             tokio::io::AsyncWriteExt::write_all(&mut writer, &final_chunk).await?;
             */
-            writer.flush().await?;
+            //writer.flush().await?;
             break;
         }
 

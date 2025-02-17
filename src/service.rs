@@ -4,10 +4,12 @@ use std::time::Duration;
 use tokio::net::UnixListener;
 use tokio::sync::Mutex;
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt, AsyncBufReadExt};
+use std::path::Path;
 
 use crate::crypto::{SecureKey, encrypt_stream, decrypt_stream};
 use crate::error::ServiceError;
 use crate::protocol::Command;
+use crate::store::{mkdir_within, join_within};
 
 struct KeyCache {
     key: Option<Arc<SecureKey>>,
@@ -86,6 +88,7 @@ impl SecretsService {
             Command::Decrypt(path) => {
                 // Use writer stream directly as output
                 self.decrypt_stream(&path, writer).await?;
+                //writer.flush().await?;
             }
         }
 
@@ -136,7 +139,7 @@ impl SecretsService {
         R: AsyncRead + Unpin,
     {
         let key = self.get_key().await?;
-        let file_path = self.store_path.join(path);
+        let file_path = mkdir_within(&self.store_path, Path::new(path))?;
         let writer = tokio::fs::File::create(file_path).await?;
         
         encrypt_stream(key, path, reader, writer).await
@@ -147,7 +150,7 @@ impl SecretsService {
         W: AsyncWrite + Unpin,
     {
         let key = self.get_key().await?;
-        let file_path = self.store_path.join(path);
+        let file_path = join_within(&self.store_path, Path::new(path))?;
         let reader = tokio::fs::File::open(file_path).await?;
         
         decrypt_stream(key, path, reader, writer).await
