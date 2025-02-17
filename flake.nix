@@ -132,7 +132,7 @@
                 #!${pkgs.bash}/bin/bash
                 SECRETS_SOCKET="${cfg.socketPath}"
                 ${builtins.readFile ./secretsctl.sh}
-              ''
+              '')
             ];
           };
         };
