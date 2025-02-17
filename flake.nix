@@ -98,7 +98,7 @@
                 
                 # Runtime directory
                 RuntimeDirectory = "secrets-service";
-                StateDirectory = "${cfg.store}";
+                StateDirectory = "secrets";
                 RuntimeDirectoryMode = "0700";
                 
                 # Environment
@@ -129,6 +129,7 @@
 
             environment.systemPackages = [
               (pkgs.writeScriptBin "secretsctl" ''
+                #!${pkgs.bash}/bin/bash
                 SECRETS_SOCKET="${cfg.socketPath}"
               '' + builtins.readFile ./secretsctl.sh)
             ];
