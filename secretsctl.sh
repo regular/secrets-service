@@ -1,6 +1,6 @@
 set -euo pipefail
 
-SOCKET=UNIX-CONNECT:socket
+SOCKET=UNIX-CONNECT:$SECRETS_SOCKET
 
 function usage() {
   echo "Usage:"

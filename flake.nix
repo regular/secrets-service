@@ -3,17 +3,14 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    crane.url = "github:ipetkov/crane";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    crane = {
-      url = "github:ipetkov/crane";
-    };
-    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, rust-overlay, crane, flake-utils }:
+  outputs = { self, nixpkgs, rust-overlay, crane}:
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
@@ -71,7 +68,7 @@
           config = lib.mkIf cfg.enable {
             systemd.services.secrets = {
               description = "Secrets encryption service";
-              documentation = [ "https://github.com/your-org/secrets-service" ];
+              documentation = [ "https://github.com/regular/secrets-service" ];
               
               serviceConfig = {
                 Type = "simple";
@@ -128,6 +125,12 @@
               mkdir -p ${cfg.store}
               chmod 700 ${cfg.store}
             '';
+
+            environment.systemPackages = [
+              (pkgs.writeScriptBin "secretsctl" ''
+                SECRETS_SOCKET="${cfg.socketPath}"
+              '' + builtins.readFile ./secretsctl.sh)
+            ];
           };
         };
 
