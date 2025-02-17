@@ -131,7 +131,7 @@
               (pkgs.writeScriptBin "secretsctl" ''
                 #!${pkgs.bash}/bin/bash
                 SECRETS_SOCKET="${cfg.socketPath}"
-              '' + builtins.readFile ./secretsctl.sh)
+              '' + (builtins.readFile ./secretsctl.sh))
             ];
           };
         };
