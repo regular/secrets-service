@@ -115,10 +115,10 @@
 
               wantedBy = [ "multi-user.target" ];
               
-              preStart = ''
-                mkdir -p ${cfg.store}
-                chmod 700 ${cfg.store}
-              '';
+              #preStart = ''
+              #  mkdir -p ${cfg.store}
+              #  chmod 700 ${cfg.store}
+              #'';
             };
 
             # Ensure the store directory exists and has correct permissions
