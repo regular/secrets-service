@@ -36,7 +36,7 @@
 
             store = mkOption {
               type = types.path;
-              default = "/etc/secrets";
+              default = "/var/lib/secrets";
               description = "Path where encrypted secrets are stored";
             };
 
@@ -98,6 +98,7 @@
                 
                 # Runtime directory
                 RuntimeDirectory = "secrets-service";
+                StateDirectory = "${cfg.store}";
                 RuntimeDirectoryMode = "0700";
                 
                 # Environment
