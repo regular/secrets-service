@@ -131,7 +131,7 @@
               (pkgs.writeScriptBin "secretsctl" ''
                 #!${pkgs.bash}/bin/bash
                 SECRETS_SOCKET="${cfg.socketPath}"
-                PATH="${lib.strings.makeBinPath [ coreutils-full socat ]}"
+                PATH="${lib.strings.makeBinPath (with pkgs; [ coreutils-full socat ])}"
                 ${builtins.readFile ./secretsctl.sh}
               '')
             ];
